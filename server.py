@@ -4,6 +4,7 @@ import xml.etree.ElementTree as ET
 from typing import Any
 
 from fastmcp import FastMCP
+from knowledge_base import query as kb_query
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(name)s: %(message)s")
 logger = logging.getLogger("iso20022-mcp")
@@ -193,6 +194,24 @@ def validate_camt053(xml: str) -> dict[str, Any]:
     return {"valid": True}
   except ET.ParseError as e:
     return {"valid": False, "error": f"XML parse error: {e}"}
+
+
+@mcp.tool()
+def explain_iso20022(question: str) -> dict[str, Any]:
+  """Answer a question about ISO 20022 using the built-in knowledge base.
+
+  Input: a natural-language question about ISO 20022 concepts, message types, or fields.
+  Output: {"answer": str, "sources": list[str]} with the top matching knowledge chunks
+          and their topic labels; or {"error": "..."} on empty input.
+  """
+  _log_call("explain_iso20022", question)
+  if _empty(question):
+    return {"error": "empty input"}
+  hits = kb_query(question, n_results=3)
+  return {
+    "answer": "\n\n".join(h["text"] for h in hits),
+    "sources": [h["topic"] for h in hits],
+  }
 
 
 if __name__ == "__main__":
