@@ -81,8 +81,9 @@ def test_parse_pacs008_happy_path():
 
 
 def test_parse_pacs008_missing_field():
-    with pytest.raises(AttributeError):
-        parse_pacs008(PACS008_NO_MSGID)
+    result = parse_pacs008(PACS008_NO_MSGID)
+    assert "error" in result
+    assert "missing required field" in result["error"]
 
 
 def test_validate_pacs008_happy_path():
@@ -116,8 +117,9 @@ def test_parse_pain001_happy_path():
 
 
 def test_parse_pain001_missing_field():
-    with pytest.raises(AttributeError):
-        parse_pain001(PAIN001_NO_MSGID)
+    result = parse_pain001(PAIN001_NO_MSGID)
+    assert "error" in result
+    assert "missing required field" in result["error"]
 
 
 def test_validate_pain001_happy_path():
@@ -150,8 +152,9 @@ def test_parse_camt053_happy_path():
 
 
 def test_parse_camt053_missing_field():
-    with pytest.raises(AttributeError):
-        parse_camt053(CAMT053_NO_IBAN)
+    result = parse_camt053(CAMT053_NO_IBAN)
+    assert "error" in result
+    assert "missing required field" in result["error"]
 
 
 def test_validate_camt053_happy_path():

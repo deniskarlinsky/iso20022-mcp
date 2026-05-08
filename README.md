@@ -1,27 +1,41 @@
 # Pactus
 
-An MCP server for ISO 20022 payment message processing. Pactus exposes tools that let AI assistants like Claude parse and validate `pacs.008` payment messages directly from a chat interface.
+An MCP server for ISO 20022 payment message processing. Pactus exposes tools that let AI assistants like Claude parse and validate ISO 20022 payment messages directly from a chat interface.
 
 ## Why
 
 The global financial industry is migrating from legacy SWIFT MT messages to ISO 20022 XML by **November 2027**. During this transition, banks, fintechs, and integration teams need fast ways to inspect, debug, and validate ISO 20022 traffic. Pactus brings that capability into any MCP-compatible client so you can hand a message to an AI assistant and ask questions about it in natural language.
+
+## Features
+
+- **Structured error handling** — tools never raise; failures are returned as `{"error": "..."}` so the assistant can explain them
+- **Input validation** — empty or whitespace-only payloads are rejected up front
+- **Logging** — every tool call is logged with the tool name and either the message id or a 50-character input preview
+- **Type hints** — every tool signature is fully annotated
+- **Tested** — 15 pytest tests covering happy paths, missing fields, and malformed XML across all six tools
 
 ## Installation
 
 Requires Python 3.10+.
 
 ```bash
-git clone <repo-url> iso20022-mcp
+git clone https://github.com/deniskarlinsky/iso20022-mcp iso20022-mcp
 cd iso20022-mcp
 python -m venv venv
 source venv/bin/activate          # Windows: venv\Scripts\activate
-pip install fastmcp
+pip install -r requirements.txt
 ```
 
 Verify the server loads:
 
 ```bash
 python -c "from server import mcp; print('OK')"
+```
+
+## Running tests
+
+```bash
+python3 -m pytest tests/ -v
 ```
 
 ## Connecting to Claude Desktop
@@ -46,9 +60,32 @@ Restart Claude Desktop. The Pactus tools will appear in the tools menu.
 
 ## Available tools
 
-### `parse_pacs008`
+All tools take an `xml: str` argument and return a `dict`. **No tool raises** — every failure mode (empty input, malformed XML, missing required field) is reported as a structured response.
 
-Extracts key fields from a `pacs.008.001.08` XML message.
+| Tool pair | Message type |
+|---|---|
+| `parse_pacs008` / `validate_pacs008` | `pacs.008.001.08` — FI-to-FI Customer Credit Transfer |
+| `parse_pain001` / `validate_pain001` | `pain.001.001.09` — Customer Credit Transfer Initiation |
+| `parse_camt053` / `validate_camt053` | `camt.053.001.08` — Bank-to-Customer Statement |
+
+### Response shapes
+
+`parse_*` tools — success returns extracted fields; failure returns `{"error": "..."}`:
+
+```json
+{ "error": "empty input" }
+{ "error": "XML parse error: not well-formed (invalid token): line 1, column 0" }
+{ "error": "missing required field" }
+```
+
+`validate_*` tools — success returns `{"valid": true}`; failure returns `{"valid": false, "error": "..."}` (or `{"error": "empty input"}` when the payload is empty):
+
+```json
+{ "valid": false, "error": "missing required element: .//iso:Cdtr/iso:Nm" }
+{ "valid": false, "error": "XML parse error: not well-formed (invalid token): line 1, column 0" }
+```
+
+### Example: `parse_pacs008`
 
 **Input**
 
@@ -81,25 +118,7 @@ Extracts key fields from a `pacs.008.001.08` XML message.
 }
 ```
 
-### `validate_pacs008`
-
-Checks whether an XML string parses as a `pacs.008.001.08` message and contains the required fields.
-
-**Output (valid)**
-
-```json
-{ "valid": true }
-```
-
-**Output (invalid)**
-
-```json
-{ "valid": false, "error": "missing required element: .//iso:Cdtr/iso:Nm" }
-```
-
-```json
-{ "valid": false, "error": "XML parse error: not well-formed (invalid token): line 1, column 0" }
-```
+See `test_pacs008.xml`, `test_pain001.xml`, and `test_camt053.xml` for full sample messages of each type.
 
 ## License
 
