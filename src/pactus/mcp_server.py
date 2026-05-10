@@ -6,6 +6,7 @@ from fastmcp import FastMCP
 from pydantic import ValidationError
 
 from pactus.core.domain import ParsedPacs008
+from pactus.core.parsers import UnsafeXmlError
 from pactus.core.parsers import parse_pacs008 as _parse_pacs008
 
 mcp = FastMCP("pactus")
@@ -41,6 +42,8 @@ def parse_pacs008(xml: str) -> ParsedPacs008 | dict[str, str]:
         return {"error": "empty input"}
     try:
         return _parse_pacs008(xml)
+    except UnsafeXmlError as e:
+        return {"error": f"unsafe input rejected: {e}"}
     except ValidationError as e:
         return {"error": f"validation failed: {e.error_count()} error(s) — {e.errors()[0]['msg']}"}
     except Exception as e:
