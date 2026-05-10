@@ -23,7 +23,10 @@ def main() -> int:
     output_dir = src_dir / "pactus" / "generated"
 
     if not (src_dir / schemas_dir_relative).is_dir():
-        print(f"error: schemas directory not found at {src_dir / schemas_dir_relative}", file=sys.stderr)
+        print(
+            f"error: schemas directory not found at {src_dir / schemas_dir_relative}",
+            file=sys.stderr,
+        )
         return 1
 
     # Wipe previous generation output, but preserve .gitkeep so the

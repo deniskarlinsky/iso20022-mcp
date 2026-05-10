@@ -40,9 +40,7 @@ def parse_pacs008(xml: str) -> ParsedPacs008:
         settlement_method=grp.sttlm_inf.sttlm_mtd.value,
     )
 
-    transactions = [
-        _project_transaction(tx) for tx in body.cdt_trf_tx_inf
-    ]
+    transactions = [_project_transaction(tx) for tx in body.cdt_trf_tx_inf]
 
     return ParsedPacs008(group_header=group_header, transactions=transactions)
 
@@ -69,7 +67,9 @@ def _project_transaction(tx) -> Pacs008Transaction:  # type: ignore[no-untyped-d
 
     remittance_info = None
     if tx.rmt_inf is not None and tx.rmt_inf.ustrd:
-        remittance_info = tx.rmt_inf.ustrd[0] if isinstance(tx.rmt_inf.ustrd, list) else tx.rmt_inf.ustrd
+        remittance_info = (
+            tx.rmt_inf.ustrd[0] if isinstance(tx.rmt_inf.ustrd, list) else tx.rmt_inf.ustrd
+        )
 
     return Pacs008Transaction(
         end_to_end_id=tx.pmt_id.end_to_end_id,

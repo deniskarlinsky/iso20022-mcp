@@ -15,6 +15,14 @@ pactus-mcp to register with iso20022.org.
 - **Original publisher:** ISO20022.org (registration authority)
 - **Standard governance:** ISO 20022 — Universal financial industry message scheme
 
+### A note on hashes and line endings
+
+The SHA-256 hashes below are computed against the files exactly as vendored,
+including their original CRLF line endings as published upstream. The
+`.gitattributes` file pins `*.xsd` as `binary` so git will preserve these
+bytes byte-for-byte across all platforms. To verify a hash locally on any
+OS: `sha256sum src/pactus/schemas/pacs.008.001.08.xsd`.
+
 ## Vendored files
 
 | File | Purpose | Source path | SHA-256 |

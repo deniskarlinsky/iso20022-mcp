@@ -2,19 +2,23 @@
 
 ```mermaid
 flowchart TD
-    A[Claude Desktop] -->|reads| B[claude_desktop_config.json]
-    A -->|spawns via stdio| C[server.py]
-    C -->|registers tools| D[FastMCP]
-    D --> E[parse_pacs008]
-    D --> F[validate_pacs008]
-    E -->|parses| G[xml.etree.ElementTree]
-    F -->|parses| G
-    G -->|reads| H[ISO 20022 pacs.008 XML]
+    A[Claude Desktop] -->|spawns via stdio| B[mcp_server.py<br/>FastMCP wrapper]
+    B -->|delegates to| C[pactus.core.parsers.parse_pacs008]
+    C -->|uses| D[xsdata_pydantic.bindings.XmlParser]
+    D -->|produces| E[pactus.generated.pacs_008_001_08.Document]
+    E -->|projected by parser into| F[pactus.core.domain.ParsedPacs008]
+    F -->|returned as structured output| A
 ```
 
 ## Flow
 
-1. **Claude Desktop** loads `claude_desktop_config.json` at startup to discover MCP servers.
-2. It spawns `server.py` as a subprocess and communicates over **stdio** (stdin/stdout).
-3. `server.py` instantiates **FastMCP**, which registers the `parse_pacs008` and `validate_pacs008` tools.
-4. When a tool is invoked, it uses **`xml.etree.ElementTree`** to parse the supplied **pacs.008 ISO 20022 XML** and returns structured JSON to Claude.
+Claude Desktop spawns `mcp_server.py` as a subprocess and communicates over stdio. The server is a thin FastMCP wrapper: each tool delegates immediately to a pure function in `pactus.core`. For `parse_pacs008`, the parser feeds the XML to `xsdata_pydantic`'s `XmlParser`, which emits a generated `Document` object, then projects the relevant fields onto the curated domain model `ParsedPacs008`. The MCP layer returns that model as structured output to the client.
+
+## Two-layer model design
+
+The package keeps the generated and domain models strictly separate:
+
+- **Generated layer** (`pactus.generated`) — ~510 xsdata-emitted Pydantic classes that mirror the XSDs verbatim. Ugly but faithful, this is the source of truth for what the wire protocol allows.
+- **Domain layer** (`pactus.core.domain`) — a small set of curated, LLM-facing models with native Python types (`Decimal`, `datetime`, `date`) and human-readable field names. Built on a `MoneyDecimal` annotated type that enforces ISO 4217 currency precision.
+
+Generated models never escape `parsers.py`. Everything outside the parser sees only domain types.

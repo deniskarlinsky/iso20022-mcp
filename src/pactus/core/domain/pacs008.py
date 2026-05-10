@@ -38,9 +38,13 @@ class GroupHeader(BaseModel):
 
     model_config = ConfigDict(extra="forbid")
 
-    message_id: str = Field(..., max_length=35, description="Unique identifier for the message, assigned by the sender.")
+    message_id: str = Field(
+        ..., max_length=35, description="Unique identifier for the message, assigned by the sender."
+    )
     creation_datetime: datetime = Field(..., description="When the message was created.")
-    number_of_transactions: int = Field(..., ge=1, description="How many credit transfer transactions are in this message.")
+    number_of_transactions: int = Field(
+        ..., ge=1, description="How many credit transfer transactions are in this message."
+    )
     settlement_method: SettlementMethod = Field(..., description="How the agents settle.")
 
 
@@ -49,17 +53,39 @@ class Pacs008Transaction(BaseModel):
 
     model_config = ConfigDict(extra="forbid")
 
-    end_to_end_id: str = Field(..., max_length=35, description="Identifier assigned by the originator, passed unchanged through the entire chain.")
-    instruction_id: str | None = Field(None, max_length=35, description="Identifier for this instruction between two parties (e.g. debtor and debtor's bank).")
-    transaction_id: str | None = Field(None, max_length=35, description="Unique transaction identifier assigned by the first instructing agent.")
-    settlement_amount: Amount = Field(..., description="The amount to be settled between the agents.")
+    end_to_end_id: str = Field(
+        ...,
+        max_length=35,
+        description="Identifier assigned by the originator, passed unchanged through the entire chain.",
+    )
+    instruction_id: str | None = Field(
+        None,
+        max_length=35,
+        description="Identifier for this instruction between two parties (e.g. debtor and debtor's bank).",
+    )
+    transaction_id: str | None = Field(
+        None,
+        max_length=35,
+        description="Unique transaction identifier assigned by the first instructing agent.",
+    )
+    settlement_amount: Amount = Field(
+        ..., description="The amount to be settled between the agents."
+    )
     settlement_date: date | None = Field(None, description="The date the agents settle.")
     charge_bearer: ChargeBearer = Field(..., description="Who pays the transaction charges.")
     debtor: Party = Field(..., description="The party that owes the money.")
-    debtor_agent: Agent | None = Field(None, description="The financial institution serving the debtor.")
+    debtor_agent: Agent | None = Field(
+        None, description="The financial institution serving the debtor."
+    )
     creditor: Party = Field(..., description="The party to whom the money is owed.")
-    creditor_agent: Agent | None = Field(None, description="The financial institution serving the creditor.")
-    remittance_info: str | None = Field(None, max_length=140, description="Free-form text accompanying the payment (invoice number, reference, etc.).")
+    creditor_agent: Agent | None = Field(
+        None, description="The financial institution serving the creditor."
+    )
+    remittance_info: str | None = Field(
+        None,
+        max_length=140,
+        description="Free-form text accompanying the payment (invoice number, reference, etc.).",
+    )
 
 
 class ParsedPacs008(BaseModel):
@@ -68,4 +94,6 @@ class ParsedPacs008(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
     group_header: GroupHeader = Field(..., description="Message-level metadata.")
-    transactions: list[Pacs008Transaction] = Field(..., min_length=1, description="The credit transfer instructions in this message.")
+    transactions: list[Pacs008Transaction] = Field(
+        ..., min_length=1, description="The credit transfer instructions in this message."
+    )

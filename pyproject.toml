@@ -18,10 +18,14 @@ dependencies = [
     "fastmcp>=2.0",
     "lxml>=5.0",
     "pydantic>=2.6",
-    "sentence-transformers>=3.0",
-    "numpy>=1.26",
     "xsdata[cli,lxml]>=24.0",
     "xsdata-pydantic>=24.5",
+]
+
+[project.optional-dependencies]
+semantic = [
+    "sentence-transformers>=3.0",
+    "numpy>=1.26",
 ]
 
 [project.scripts]
@@ -29,6 +33,7 @@ pactus-mcp = "pactus.mcp_server:main"
 
 [project.urls]
 Repository = "https://github.com/deniskarlinsky/iso20022-mcp"
+Documentation = "https://github.com/deniskarlinsky/iso20022-mcp#readme"
 
 [build-system]
 requires = ["hatchling"]
@@ -39,6 +44,7 @@ packages = ["src/pactus"]
 
 [tool.hatch.build.targets.wheel.force-include]
 "src/pactus/schemas" = "pactus/schemas"
+"src/pactus/py.typed" = "pactus/py.typed"
 
 [dependency-groups]
 dev = [

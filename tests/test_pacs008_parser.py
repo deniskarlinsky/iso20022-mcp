@@ -22,7 +22,9 @@ class TestParsePacs008Single:
         result = parse_pacs008(pacs008_single_xml)
         assert result.group_header.message_id == "MSG20240508001"
 
-    def test_group_header_creation_datetime_is_python_datetime(self, pacs008_single_xml: str) -> None:
+    def test_group_header_creation_datetime_is_python_datetime(
+        self, pacs008_single_xml: str
+    ) -> None:
         result = parse_pacs008(pacs008_single_xml)
         assert isinstance(result.group_header.creation_datetime, datetime)
 
@@ -78,8 +80,15 @@ class TestParsePacs008Multi:
 
     def test_distinct_amounts_and_currencies(self, pacs008_multi_xml: str) -> None:
         result = parse_pacs008(pacs008_multi_xml)
-        amounts = [(tx.settlement_amount.value, tx.settlement_amount.currency) for tx in result.transactions]
-        assert amounts == [(Decimal("1500.00"), "EUR"), (Decimal("250.50"), "EUR"), (Decimal("9999.99"), "USD")]
+        amounts = [
+            (tx.settlement_amount.value, tx.settlement_amount.currency)
+            for tx in result.transactions
+        ]
+        assert amounts == [
+            (Decimal("1500.00"), "EUR"),
+            (Decimal("250.50"), "EUR"),
+            (Decimal("9999.99"), "USD"),
+        ]
 
     def test_distinct_charge_bearers(self, pacs008_multi_xml: str) -> None:
         result = parse_pacs008(pacs008_multi_xml)
@@ -117,6 +126,7 @@ class TestSchemaExportableForLLM:
         schema = ParsedPacs008.model_json_schema()
         # The Literal type should appear as an enum constraint somewhere in the schema.
         import json
+
         schema_str = json.dumps(schema)
         assert "SHAR" in schema_str
         assert "DEBT" in schema_str
@@ -124,9 +134,12 @@ class TestSchemaExportableForLLM:
     def test_amount_value_serializes_as_string(self) -> None:
         """Decimals must serialize as strings, not floats, to preserve precision."""
         from pactus.core.domain.common import Amount
+
         amt = Amount(value=Decimal("123.45"), currency="USD")
         dumped = amt.model_dump(mode="json")
-        assert isinstance(dumped["value"], str), f"Decimal serialized as {type(dumped['value']).__name__}, expected str"
+        assert isinstance(dumped["value"], str), (
+            f"Decimal serialized as {type(dumped['value']).__name__}, expected str"
+        )
 
     def test_amount_value_schema_has_no_lookaround_regex(self) -> None:
         """The MoneyDecimal type must produce an ECMA-262-compatible JSON schema.
@@ -138,5 +151,9 @@ class TestSchemaExportableForLLM:
         import json
 
         schema_str = json.dumps(ParsedPacs008.model_json_schema())
-        assert "(?!" not in schema_str, "JSON schema contains look-around regex — MCP clients will reject it"
-        assert "(?<" not in schema_str, "JSON schema contains look-behind regex — MCP clients will reject it"
+        assert "(?!" not in schema_str, (
+            "JSON schema contains look-around regex — MCP clients will reject it"
+        )
+        assert "(?<" not in schema_str, (
+            "JSON schema contains look-behind regex — MCP clients will reject it"
+        )

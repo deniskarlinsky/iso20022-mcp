@@ -1,56 +1,43 @@
 # Pactus
 
-An MCP server for ISO 20022 payment message processing. Pactus exposes tools that let AI assistants like Claude parse and validate ISO 20022 payment messages directly from a chat interface.
+Pactus is an MCP server that lets AI assistants parse ISO 20022 payment messages directly from chat. It currently supports `pacs.008.001.08` (FI-to-FI Customer Credit Transfer); `pacs.002`, `pain.001`, and `camt.053` are scaffolded for upcoming releases.
 
-## Why
+## Why this exists
 
-The global financial industry is migrating from legacy SWIFT MT messages to ISO 20022 XML by **November 2027**. During this transition, banks, fintechs, and integration teams need fast ways to inspect, debug, and validate ISO 20022 traffic. Pactus brings that capability into any MCP-compatible client so you can hand a message to an AI assistant and ask questions about it in natural language.
+SWIFT's cross-border CBPR+ programme is migrating bank-to-bank traffic from legacy MT messages to ISO 20022 XML, with full cutover by November 2027. Banks, fintechs, and integration teams need fast ways to inspect and debug ISO 20022 traffic during the transition. Pactus brings that capability into any MCP-compatible client.
 
-## Features
+## Status
 
-- **Structured error handling** — tools never raise; failures are returned as `{"error": "..."}` so the assistant can explain them
-- **Input validation** — empty or whitespace-only payloads are rejected up front
-- **Logging** — every tool call is logged with the tool name and either the message id or a 50-character input preview
-- **Type hints** — every tool signature is fully annotated
-- **Tested** — 15 pytest tests covering happy paths, missing fields, and malformed XML across all six tools
+Early development. One vertical slice (`pacs.008`) is production-quality; remaining message types are in progress. Not yet on PyPI.
 
-## Installation
+## Requirements
 
-Requires Python 3.10+.
+- Python 3.12+
+- [uv](https://docs.astral.sh/uv/) recommended
+
+## Quick start
 
 ```bash
-git clone https://github.com/deniskarlinsky/iso20022-mcp iso20022-mcp
+git clone https://github.com/deniskarlinsky/iso20022-mcp
 cd iso20022-mcp
-python -m venv venv
-source venv/bin/activate          # Windows: venv\Scripts\activate
-pip install -r requirements.txt
-```
-
-Verify the server loads:
-
-```bash
-python -c "from server import mcp; print('OK')"
-```
-
-## Running tests
-
-```bash
-python3 -m pytest tests/ -v
+uv sync
+uv run pytest
 ```
 
 ## Connecting to Claude Desktop
 
-Add Pactus to your Claude Desktop config file:
+Add Pactus to your Claude Desktop config:
 
 - **macOS:** `~/Library/Application Support/Claude/claude_desktop_config.json`
 - **Windows:** `%APPDATA%\Claude\claude_desktop_config.json`
+- **Linux:** `~/.config/Claude/claude_desktop_config.json`
 
 ```json
 {
   "mcpServers": {
     "pactus": {
-      "command": "/absolute/path/to/iso20022-mcp/venv/bin/python",
-      "args": ["/absolute/path/to/iso20022-mcp/server.py"]
+      "command": "uv",
+      "args": ["run", "--directory", "/absolute/path/to/iso20022-mcp", "pactus-mcp"]
     }
   }
 }
@@ -60,65 +47,51 @@ Restart Claude Desktop. The Pactus tools will appear in the tools menu.
 
 ## Available tools
 
-All tools take an `xml: str` argument and return a `dict`. **No tool raises** — every failure mode (empty input, malformed XML, missing required field) is reported as a structured response.
-
-| Tool pair | Message type |
+| Tool | Purpose |
 |---|---|
-| `parse_pacs008` / `validate_pacs008` | `pacs.008.001.08` — FI-to-FI Customer Credit Transfer |
-| `parse_pain001` / `validate_pain001` | `pain.001.001.09` — Customer Credit Transfer Initiation |
-| `parse_camt053` / `validate_camt053` | `camt.053.001.08` — Bank-to-Customer Statement |
+| `ping` | Health check; returns service metadata. |
+| `parse_pacs008` | Parse a `pacs.008.001.08` message into a typed `ParsedPacs008` model with group header and transactions. |
 
-### Response shapes
+`parse_pacs008` returns a structured Pydantic model rather than a hand-rolled dict, so the LLM sees fields with their proper types (e.g. `Decimal` amounts, `datetime` timestamps). On parse or validation failure, the tool returns `{"error": "..."}` instead of raising.
 
-`parse_*` tools — success returns extracted fields; failure returns `{"error": "..."}`:
-
-```json
-{ "error": "empty input" }
-{ "error": "XML parse error: not well-formed (invalid token): line 1, column 0" }
-{ "error": "missing required field" }
-```
-
-`validate_*` tools — success returns `{"valid": true}`; failure returns `{"valid": false, "error": "..."}` (or `{"error": "empty input"}` when the payload is empty):
-
-```json
-{ "valid": false, "error": "missing required element: .//iso:Cdtr/iso:Nm" }
-{ "valid": false, "error": "XML parse error: not well-formed (invalid token): line 1, column 0" }
-```
-
-### Example: `parse_pacs008`
-
-**Input**
-
-```xml
-<Document xmlns="urn:iso:std:iso:20022:tech:xsd:pacs.008.001.08">
-  <FIToFICstmrCdtTrf>
-    <GrpHdr><MsgId>MSG-001</MsgId></GrpHdr>
-    <CdtTrfTxInf>
-      <IntrBkSttlmAmt Ccy="EUR">1250.00</IntrBkSttlmAmt>
-      <Dbtr><Nm>Acme GmbH</Nm></Dbtr>
-      <DbtrAgt><FinInstnId><BICFI>DEUTDEFF</BICFI></FinInstnId></DbtrAgt>
-      <Cdtr><Nm>Globex SA</Nm></Cdtr>
-      <CdtrAgt><FinInstnId><BICFI>BNPAFRPP</BICFI></FinInstnId></CdtrAgt>
-    </CdtTrfTxInf>
-  </FIToFICstmrCdtTrf>
-</Document>
-```
-
-**Output**
+Example of what an LLM sees back from `parse_pacs008`:
 
 ```json
 {
-  "message_id": "MSG-001",
-  "amount": "1250.00",
-  "currency": "EUR",
-  "debtor": "Acme GmbH",
-  "debtor_bic": "DEUTDEFF",
-  "creditor": "Globex SA",
-  "creditor_bic": "BNPAFRPP"
+  "group_header": {
+    "message_id": "MSG-001",
+    "creation_datetime": "2026-05-09T14:30:00",
+    "number_of_transactions": 1,
+    "settlement_method": "CLRG"
+  },
+  "transactions": [
+    {
+      "end_to_end_id": "E2E-001",
+      "settlement_amount": {"value": "1250.00", "currency": "EUR"},
+      "charge_bearer": "SHAR",
+      "debtor": {"name": "Acme GmbH"},
+      "debtor_agent": {"bicfi": "DEUTDEFF"},
+      "creditor": {"name": "Globex SA"},
+      "creditor_agent": {"bicfi": "BNPAFRPP"}
+    }
+  ]
 }
 ```
 
-See `test_pacs008.xml`, `test_pain001.xml`, and `test_camt053.xml` for full sample messages of each type.
+## Architecture
+
+Pactus uses a hexagonal layout: `pactus/core/` is pure business logic with no MCP awareness, `mcp_server.py` is a thin FastMCP wrapper, and the generated xsdata models live in `pactus/generated/` and never escape `parsers.py`. See [architecture.md](architecture.md) for the diagram.
+
+## Development
+
+```bash
+uv run ruff check
+uv run ruff format
+uv run mypy
+uv run pytest
+```
+
+The project targets `mypy --strict`.
 
 ## License
 

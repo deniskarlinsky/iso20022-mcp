@@ -61,7 +61,9 @@ class Party(BaseModel):
 
     model_config = ConfigDict(extra="forbid")
 
-    name: str = Field(..., min_length=1, max_length=140, description="Party name as it appears in the message.")
+    name: str = Field(
+        ..., min_length=1, max_length=140, description="Party name as it appears in the message."
+    )
 
 
 class Agent(BaseModel):
@@ -92,4 +94,10 @@ class Amount(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
     value: MoneyDecimal = Field(..., description="Monetary value. Always positive.")
-    currency: str = Field(..., min_length=3, max_length=3, pattern=r"^[A-Z]{3}$", description="ISO 4217 currency code.")
+    currency: str = Field(
+        ...,
+        min_length=3,
+        max_length=3,
+        pattern=r"^[A-Z]{3}$",
+        description="ISO 4217 currency code.",
+    )
