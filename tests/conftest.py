@@ -37,3 +37,21 @@ def pacs002_rejected_xml() -> str:
 def pacs002_multi_xml() -> str:
     """A pacs.002 with three transactions in mixed statuses."""
     return (FIXTURES_DIR / "test_pacs002_multi.xml").read_text(encoding="utf-8")
+
+
+@pytest.fixture
+def pain001_single_xml() -> str:
+    """A pain.001 with one PmtInf containing one full transaction."""
+    return (FIXTURES_DIR / "test_pain001_single.xml").read_text(encoding="utf-8")
+
+
+@pytest.fixture
+def pain001_multi_pmt_inf_xml() -> str:
+    """A pain.001 with two PmtInf batches at different execution dates."""
+    return (FIXTURES_DIR / "test_pain001_multi_pmt_inf.xml").read_text(encoding="utf-8")
+
+
+@pytest.fixture
+def pain001_minimal_xml() -> str:
+    """A pain.001 with only required fields — for optional-field omission tests."""
+    return (FIXTURES_DIR / "test_pain001_minimal.xml").read_text(encoding="utf-8")

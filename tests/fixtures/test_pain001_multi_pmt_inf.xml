@@ -1,0 +1,65 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Document xmlns="urn:iso:std:iso:20022:tech:xsd:pain.001.001.09">
+  <CstmrCdtTrfInitn>
+    <GrpHdr>
+      <MsgId>PAIN20260510-002</MsgId>
+      <CreDtTm>2026-05-10T10:00:00</CreDtTm>
+      <NbOfTxs>3</NbOfTxs>
+      <InitgPty>
+        <Nm>ACME Corp</Nm>
+      </InitgPty>
+    </GrpHdr>
+    <PmtInf>
+      <PmtInfId>BATCH-URGENT</PmtInfId>
+      <PmtMtd>TRF</PmtMtd>
+      <NbOfTxs>1</NbOfTxs>
+      <PmtTpInf>
+        <SvcLvl>
+          <Cd>URGP</Cd>
+        </SvcLvl>
+      </PmtTpInf>
+      <ReqdExctnDt>
+        <Dt>2026-05-11</Dt>
+      </ReqdExctnDt>
+      <Dbtr><Nm>ACME Corp</Nm></Dbtr>
+      <DbtrAcct><Id><IBAN>DE89370400440532013000</IBAN></Id></DbtrAcct>
+      <DbtrAgt><FinInstnId><BICFI>DEUTDEFFXXX</BICFI></FinInstnId></DbtrAgt>
+      <ChrgBr>DEBT</ChrgBr>
+      <CdtTrfTxInf>
+        <PmtId><EndToEndId>E2E-URGENT-1</EndToEndId></PmtId>
+        <Amt><InstdAmt Ccy="EUR">50000.00</InstdAmt></Amt>
+        <Cdtr><Nm>Vendor One Ltd</Nm></Cdtr>
+      </CdtTrfTxInf>
+    </PmtInf>
+    <PmtInf>
+      <PmtInfId>BATCH-STANDARD</PmtInfId>
+      <PmtMtd>TRF</PmtMtd>
+      <NbOfTxs>2</NbOfTxs>
+      <PmtTpInf>
+        <SvcLvl>
+          <Cd>SEPA</Cd>
+        </SvcLvl>
+        <CtgyPurp>
+          <Cd>SALA</Cd>
+        </CtgyPurp>
+      </PmtTpInf>
+      <ReqdExctnDt>
+        <Dt>2026-05-25</Dt>
+      </ReqdExctnDt>
+      <Dbtr><Nm>ACME Corp</Nm></Dbtr>
+      <DbtrAcct><Id><IBAN>DE89370400440532013000</IBAN></Id></DbtrAcct>
+      <DbtrAgt><FinInstnId><BICFI>DEUTDEFFXXX</BICFI></FinInstnId></DbtrAgt>
+      <ChrgBr>SLEV</ChrgBr>
+      <CdtTrfTxInf>
+        <PmtId><EndToEndId>E2E-SAL-1</EndToEndId></PmtId>
+        <Amt><InstdAmt Ccy="EUR">3500.00</InstdAmt></Amt>
+        <Cdtr><Nm>Employee A</Nm></Cdtr>
+      </CdtTrfTxInf>
+      <CdtTrfTxInf>
+        <PmtId><EndToEndId>E2E-SAL-2</EndToEndId></PmtId>
+        <Amt><InstdAmt Ccy="EUR">4200.00</InstdAmt></Amt>
+        <Cdtr><Nm>Employee B</Nm></Cdtr>
+      </CdtTrfTxInf>
+    </PmtInf>
+  </CstmrCdtTrfInitn>
+</Document>

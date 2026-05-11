@@ -7,6 +7,7 @@ from pydantic import ValidationError
 
 from pactus.core.domain import ParsedPacs008
 from pactus.core.domain.pacs002 import ParsedPacs002
+from pactus.core.domain.pain001 import ParsedPain001
 from pactus.core.parsers import (
     UnsafeXmlError,
 )
@@ -15,6 +16,9 @@ from pactus.core.parsers import (
 )
 from pactus.core.parsers import (
     parse_pacs008 as _parse_pacs008,
+)
+from pactus.core.parsers import (
+    parse_pain001 as _parse_pain001,
 )
 
 mcp = FastMCP("pactus")
@@ -80,6 +84,36 @@ def parse_pacs002(xml: str) -> ParsedPacs002 | dict[str, str]:
         return {"error": "empty input"}
     try:
         return _parse_pacs002(xml)
+    except UnsafeXmlError as e:
+        return {"error": f"unsafe input rejected: {e}"}
+    except ValidationError as e:
+        return {"error": f"validation failed: {e.error_count()} error(s) — {e.errors()[0]['msg']}"}
+    except Exception as e:
+        return {"error": f"{type(e).__name__}: {e}"}
+
+
+@mcp.tool
+def parse_pain001(xml: str) -> ParsedPain001 | dict[str, str]:
+    """Parse a pain.001.001.09 Customer Credit Transfer Initiation message.
+
+    pain.001 is the initiating message in a credit transfer flow, sent by a
+    corporate or customer to their bank. It carries one or more payment
+    batches (PaymentInformation), each grouping transactions that share a
+    debtor account, execution date, and service level.
+
+    Returns a structured ParsedPain001 on success, or {"error": "..."} on
+    failure.
+
+    Args:
+        xml: The pain.001 XML message as a string.
+
+    Returns:
+        ParsedPain001 on success, or {"error": "..."} on failure.
+    """
+    if not xml or not xml.strip():
+        return {"error": "empty input"}
+    try:
+        return _parse_pain001(xml)
     except UnsafeXmlError as e:
         return {"error": f"unsafe input rejected: {e}"}
     except ValidationError as e:

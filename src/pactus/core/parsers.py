@@ -26,8 +26,19 @@ from pactus.core.domain.pacs008 import (
     Pacs008Transaction,
     ParsedPacs008,
 )
+from pactus.core.domain.pain001 import (
+    GroupHeader as Pain001GroupHeader,
+)
+from pactus.core.domain.pain001 import (
+    ParsedPain001,
+    PaymentInformation,
+)
+from pactus.core.domain.pain001 import (
+    Transaction as Pain001Transaction,
+)
 from pactus.generated.pacs_002_001_10 import Document as Pacs002Document
 from pactus.generated.pacs_008_001_08 import Document as Pacs008Document
+from pactus.generated.pain_001_001_09 import Document as Pain001Document
 
 
 class UnsafeXmlError(ValueError):
@@ -222,4 +233,115 @@ def _project_status_reason(rsn) -> StatusReason:  # type: ignore[no-untyped-def]
         proprietary=proprietary if code else None,
         originator_name=rsn.orgtr.nm if rsn.orgtr is not None else None,
         additional_information=list(rsn.addtl_inf),
+    )
+
+
+# ---------------------------------------------------------------------------
+# Shared projection helpers (pain.001 + future slices)
+# ---------------------------------------------------------------------------
+
+
+def _project_party(party) -> Party:  # type: ignore[no-untyped-def]
+    """Project a xsdata PartyIdentification into the domain Party."""
+    return Party(name=party.nm)
+
+
+def _project_agent(agt) -> Agent:  # type: ignore[no-untyped-def]
+    """Project a xsdata BranchAndFinancialInstitutionIdentification into domain Agent."""
+    bic = None
+    if agt.fin_instn_id is not None:  # pragma: no branch
+        bic = agt.fin_instn_id.bicfi
+    return Agent(bic=bic)
+
+
+# ---------------------------------------------------------------------------
+# pain.001.001.09 parser
+# ---------------------------------------------------------------------------
+
+
+def parse_pain001(xml: str) -> ParsedPain001:
+    """Parse a pain.001.001.09 Customer Credit Transfer Initiation.
+
+    Raises:
+        UnsafeXmlError: if the input contains DOCTYPE or ENTITY declarations.
+        ValidationError: if the XML doesn't conform to pain.001.001.09.
+    """
+    _reject_unsafe_xml(xml)
+    generated = _xml_parser.from_string(xml, Pain001Document)
+    return _project_pain001(generated)
+
+
+def _project_pain001(doc: Pain001Document) -> ParsedPain001:
+    """Project the xsdata-generated Pain001Document into the domain model."""
+    cstmr = doc.cstmr_cdt_trf_initn
+
+    grp_hdr = cstmr.grp_hdr
+    initiating_name = grp_hdr.initg_pty.nm if grp_hdr.initg_pty is not None else None
+
+    return ParsedPain001(
+        group_header=Pain001GroupHeader(
+            message_id=grp_hdr.msg_id,
+            creation_datetime=grp_hdr.cre_dt_tm.to_datetime(),
+            number_of_transactions=int(grp_hdr.nb_of_txs),
+            control_sum=str(grp_hdr.ctrl_sum) if grp_hdr.ctrl_sum is not None else None,
+            initiating_party_name=initiating_name,
+        ),
+        payment_informations=[_project_payment_information(pmt) for pmt in cstmr.pmt_inf],
+    )
+
+
+def _project_payment_information(pmt) -> PaymentInformation:  # type: ignore[no-untyped-def]
+    """Project one xsdata PaymentInstruction30 into the domain PaymentInformation."""
+    debtor_iban = None
+    if pmt.dbtr_acct is not None and pmt.dbtr_acct.id is not None:
+        debtor_iban = pmt.dbtr_acct.id.iban
+
+    svc_lvl_code = None
+    ctgy_purp_code = None
+    if pmt.pmt_tp_inf is not None:
+        if pmt.pmt_tp_inf.svc_lvl:
+            svc_lvl_code = pmt.pmt_tp_inf.svc_lvl[0].cd
+        if pmt.pmt_tp_inf.ctgy_purp is not None:
+            ctgy_purp_code = pmt.pmt_tp_inf.ctgy_purp.cd
+
+    return PaymentInformation(
+        payment_information_id=pmt.pmt_inf_id,
+        payment_method=pmt.pmt_mtd.value,
+        batch_booking=pmt.btch_bookg,
+        number_of_transactions=int(pmt.nb_of_txs) if pmt.nb_of_txs is not None else None,
+        control_sum=str(pmt.ctrl_sum) if pmt.ctrl_sum is not None else None,
+        requested_execution_date=pmt.reqd_exctn_dt.dt.to_date(),
+        debtor=_project_party(pmt.dbtr),
+        debtor_account_iban=debtor_iban,
+        debtor_agent=_project_agent(pmt.dbtr_agt),
+        charge_bearer=pmt.chrg_br.value if pmt.chrg_br is not None else None,
+        service_level_code=svc_lvl_code,
+        category_purpose_code=ctgy_purp_code,
+        transactions=[_project_pain001_transaction(tx) for tx in pmt.cdt_trf_tx_inf],
+    )
+
+
+def _project_pain001_transaction(tx) -> Pain001Transaction:  # type: ignore[no-untyped-def]
+    """Project one xsdata CreditTransferTransaction34 into a domain Transaction."""
+    creditor_iban = None
+    if tx.cdtr_acct is not None and tx.cdtr_acct.id is not None:
+        creditor_iban = tx.cdtr_acct.id.iban
+
+    remittance_lines: list[str] = []
+    if tx.rmt_inf is not None and tx.rmt_inf.ustrd:
+        remittance_lines = list(tx.rmt_inf.ustrd)
+
+    creditor_agent = _project_agent(tx.cdtr_agt) if tx.cdtr_agt is not None else None
+
+    return Pain001Transaction(
+        end_to_end_id=tx.pmt_id.end_to_end_id,
+        instruction_id=tx.pmt_id.instr_id,
+        amount=Amount(
+            value=tx.amt.instd_amt.value,
+            currency=tx.amt.instd_amt.ccy,
+        ),
+        creditor=_project_party(tx.cdtr),
+        creditor_account_iban=creditor_iban,
+        creditor_agent=creditor_agent,
+        remittance_info=remittance_lines,
     )
