@@ -18,7 +18,7 @@ dependencies = [
     "fastmcp>=2.0",
     "lxml>=5.0",
     "pydantic>=2.6",
-    "xsdata[cli,lxml]>=24.0",
+    "xsdata[cli,lxml]>=26.2",
     "xsdata-pydantic>=24.5",
 ]
 
