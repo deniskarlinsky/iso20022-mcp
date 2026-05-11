@@ -1,6 +1,6 @@
 [project]
 name = "pactus-mcp"
-version = "0.2.0"
+version = "1.0.0"
 description = "Production-grade MCP server for ISO 20022 payment message processing"
 readme = "README.md"
 requires-python = ">=3.12"
@@ -8,7 +8,7 @@ license = { text = "MIT" }
 authors = [{ name = "Denis Karlinsky" }]
 keywords = ["mcp", "iso20022", "fintech", "payments", "swift", "pacs008", "pain001", "camt053"]
 classifiers = [
-    "Development Status :: 4 - Beta",
+    "Development Status :: 5 - Production/Stable",
     "Intended Audience :: Financial and Insurance Industry",
     "License :: OSI Approved :: MIT License",
     "Programming Language :: Python :: 3.12",
@@ -52,6 +52,7 @@ dev = [
     "pytest-cov>=5.0",
     "ruff>=0.6",
     "mypy>=1.11",
+    "pytest-asyncio>=1.3.0",
 ]
 
 [tool.ruff]
@@ -81,12 +82,12 @@ ignore_missing_imports = true
 minversion = "8.0"
 testpaths = ["tests"]
 addopts = ["-ra", "--strict-markers", "--cov", "--cov-report=term-missing"]
+asyncio_mode = "auto"
 
 [tool.coverage.run]
 source = ["src/pactus"]
 omit = [
     "src/pactus/generated/*",
-    "src/pactus/mcp_server.py",
 ]
 branch = true
 

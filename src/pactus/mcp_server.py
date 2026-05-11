@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+import importlib.metadata
+
 from fastmcp import FastMCP
 from pydantic import ValidationError
 
@@ -27,11 +29,13 @@ from pactus.core.parsers import (
 
 mcp = FastMCP("pactus")
 
+_VERSION = importlib.metadata.version("pactus-mcp")
+
 
 @mcp.tool
 def ping() -> dict[str, str]:
     """Health check tool. Returns service metadata."""
-    return {"status": "ok", "service": "pactus-mcp", "version": "0.2.0"}
+    return {"status": "ok", "service": "pactus-mcp", "version": _VERSION}
 
 
 @mcp.tool
