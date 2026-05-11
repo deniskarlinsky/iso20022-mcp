@@ -42,6 +42,20 @@ build-backend = "hatchling.build"
 [tool.hatch.build.targets.wheel]
 packages = ["src/pactus"]
 
+[tool.hatch.build.targets.wheel.force-include]
+"src/pactus/generated/__init__.py" = "pactus/generated/__init__.py"
+"src/pactus/generated/camt_053_001_08.py" = "pactus/generated/camt_053_001_08.py"
+"src/pactus/generated/pacs_002_001_10.py" = "pactus/generated/pacs_002_001_10.py"
+"src/pactus/generated/pacs_008_001_08.py" = "pactus/generated/pacs_008_001_08.py"
+"src/pactus/generated/pain_001_001_09.py" = "pactus/generated/pain_001_001_09.py"
+
+[tool.hatch.build.targets.sdist.force-include]
+"src/pactus/generated/__init__.py" = "src/pactus/generated/__init__.py"
+"src/pactus/generated/camt_053_001_08.py" = "src/pactus/generated/camt_053_001_08.py"
+"src/pactus/generated/pacs_002_001_10.py" = "src/pactus/generated/pacs_002_001_10.py"
+"src/pactus/generated/pacs_008_001_08.py" = "src/pactus/generated/pacs_008_001_08.py"
+"src/pactus/generated/pain_001_001_09.py" = "src/pactus/generated/pain_001_001_09.py"
+
 [dependency-groups]
 dev = [
     "pytest>=8.0",
