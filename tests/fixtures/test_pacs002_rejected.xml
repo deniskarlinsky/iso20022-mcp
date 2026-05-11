@@ -1,0 +1,33 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Document xmlns="urn:iso:std:iso:20022:tech:xsd:pacs.002.001.10">
+  <FIToFIPmtStsRpt>
+    <GrpHdr>
+      <MsgId>STS20260510002</MsgId>
+      <CreDtTm>2026-05-10T15:00:00</CreDtTm>
+    </GrpHdr>
+    <OrgnlGrpInfAndSts>
+      <OrgnlMsgId>MSG20240508002</OrgnlMsgId>
+      <OrgnlMsgNmId>pacs.008.001.08</OrgnlMsgNmId>
+    </OrgnlGrpInfAndSts>
+    <TxInfAndSts>
+      <OrgnlEndToEndId>E2E-002</OrgnlEndToEndId>
+      <OrgnlTxId>TX-002</OrgnlTxId>
+      <TxSts>RJCT</TxSts>
+      <StsRsnInf>
+        <Orgtr>
+          <Nm>Receiving Bank GmbH</Nm>
+        </Orgtr>
+        <Rsn>
+          <Cd>AC01</Cd>
+        </Rsn>
+        <AddtlInf>Account number format invalid for target jurisdiction</AddtlInf>
+      </StsRsnInf>
+      <StsRsnInf>
+        <Rsn>
+          <Cd>AG01</Cd>
+        </Rsn>
+        <AddtlInf>Transaction type not supported by creditor agent</AddtlInf>
+      </StsRsnInf>
+    </TxInfAndSts>
+  </FIToFIPmtStsRpt>
+</Document>

@@ -6,8 +6,16 @@ from fastmcp import FastMCP
 from pydantic import ValidationError
 
 from pactus.core.domain import ParsedPacs008
-from pactus.core.parsers import UnsafeXmlError
-from pactus.core.parsers import parse_pacs008 as _parse_pacs008
+from pactus.core.domain.pacs002 import ParsedPacs002
+from pactus.core.parsers import (
+    UnsafeXmlError,
+)
+from pactus.core.parsers import (
+    parse_pacs002 as _parse_pacs002,
+)
+from pactus.core.parsers import (
+    parse_pacs008 as _parse_pacs008,
+)
 
 mcp = FastMCP("pactus")
 
@@ -42,6 +50,36 @@ def parse_pacs008(xml: str) -> ParsedPacs008 | dict[str, str]:
         return {"error": "empty input"}
     try:
         return _parse_pacs008(xml)
+    except UnsafeXmlError as e:
+        return {"error": f"unsafe input rejected: {e}"}
+    except ValidationError as e:
+        return {"error": f"validation failed: {e.error_count()} error(s) — {e.errors()[0]['msg']}"}
+    except Exception as e:
+        return {"error": f"{type(e).__name__}: {e}"}
+
+
+@mcp.tool
+def parse_pacs002(xml: str) -> ParsedPacs002 | dict[str, str]:
+    """Parse a pacs.002.001.10 (FI-to-FI Payment Status Report) message.
+
+    pacs.002 is the response to a pacs.008 credit transfer. It reports
+    whether each transaction was accepted, rejected, or is in an
+    intermediate state. Each transaction carries a status code and
+    optionally one or more structured reason codes explaining the outcome.
+
+    Returns a structured ParsedPacs002 on success, or {"error": "..."} on
+    failure.
+
+    Args:
+        xml: The pacs.002 XML message as a string.
+
+    Returns:
+        ParsedPacs002 on success, or {"error": "..."} on failure.
+    """
+    if not xml or not xml.strip():
+        return {"error": "empty input"}
+    try:
+        return _parse_pacs002(xml)
     except UnsafeXmlError as e:
         return {"error": f"unsafe input rejected: {e}"}
     except ValidationError as e:

@@ -12,11 +12,21 @@ from xsdata.formats.dataclass.parsers.config import ParserConfig
 from xsdata_pydantic.bindings import XmlParser
 
 from pactus.core.domain.common import Agent, Amount, Party
+from pactus.core.domain.pacs002 import (
+    GroupHeader as Pacs002GroupHeader,
+)
+from pactus.core.domain.pacs002 import (
+    OriginalGroupInfo,
+    ParsedPacs002,
+    StatusReason,
+    TransactionStatus,
+)
 from pactus.core.domain.pacs008 import (
     GroupHeader,
     Pacs008Transaction,
     ParsedPacs008,
 )
+from pactus.generated.pacs_002_001_10 import Document as Pacs002Document
 from pactus.generated.pacs_008_001_08 import Document as Pacs008Document
 
 
@@ -140,4 +150,76 @@ def _project_transaction(tx) -> Pacs008Transaction:  # type: ignore[no-untyped-d
         creditor=Party(name=tx.cdtr.nm),
         creditor_agent=creditor_agent,
         remittance_info=remittance_info,
+    )
+
+
+def parse_pacs002(xml: str) -> ParsedPacs002:
+    """Parse a pacs.002.001.10 FI-to-FI Payment Status Report.
+
+    Raises:
+        UnsafeXmlError: if the input contains DOCTYPE or ENTITY declarations.
+        ValidationError: if the XML doesn't conform to pacs.002.001.10.
+    """
+    _reject_unsafe_xml(xml)
+    generated = _xml_parser.from_string(xml, Pacs002Document)
+    return _project_pacs002(generated)
+
+
+def _project_pacs002(doc: Pacs002Document) -> ParsedPacs002:
+    """Project the xsdata-generated Pacs002Document into the curated domain model."""
+    report = doc.fito_fipmt_sts_rpt
+    if not report.orgnl_grp_inf_and_sts:
+        raise ValueError("pacs.002 document is missing OrgnlGrpInfAndSts")
+
+    grp_hdr = report.grp_hdr
+    orig_grp = report.orgnl_grp_inf_and_sts[0]
+
+    return ParsedPacs002(
+        group_header=Pacs002GroupHeader(
+            message_id=grp_hdr.msg_id,
+            creation_datetime=grp_hdr.cre_dt_tm.to_datetime(),
+        ),
+        original_group_info=OriginalGroupInfo(
+            original_message_id=orig_grp.orgnl_msg_id,
+            original_message_name_id=orig_grp.orgnl_msg_nm_id,
+            original_creation_datetime=(
+                orig_grp.orgnl_cre_dt_tm.to_datetime()
+                if orig_grp.orgnl_cre_dt_tm is not None
+                else None
+            ),
+            group_status=orig_grp.grp_sts,  # type: ignore[arg-type]
+        ),
+        transaction_statuses=[_project_transaction_status(tx) for tx in report.tx_inf_and_sts],
+    )
+
+
+def _project_transaction_status(tx) -> TransactionStatus:  # type: ignore[no-untyped-def]
+    """Project one xsdata-generated TxInfAndSts into the domain TransactionStatus."""
+    if tx.tx_sts is None:
+        raise ValueError("pacs.002 transaction status is missing required TxSts")
+
+    return TransactionStatus(
+        original_end_to_end_id=tx.orgnl_end_to_end_id,
+        original_transaction_id=tx.orgnl_tx_id,
+        status=tx.tx_sts,
+        status_reasons=[_project_status_reason(rsn) for rsn in tx.sts_rsn_inf],
+        acceptance_datetime=(
+            tx.accptnc_dt_tm.to_datetime() if tx.accptnc_dt_tm is not None else None
+        ),
+    )
+
+
+def _project_status_reason(rsn) -> StatusReason:  # type: ignore[no-untyped-def]
+    """Project xsdata StsRsnInf into the domain StatusReason."""
+    code = None
+    proprietary = None
+    if rsn.rsn is not None:
+        code = rsn.rsn.cd
+        proprietary = rsn.rsn.prtry
+
+    return StatusReason(
+        code=code or proprietary or "UNKNOWN",
+        proprietary=proprietary if code else None,
+        originator_name=rsn.orgtr.nm if rsn.orgtr is not None else None,
+        additional_information=list(rsn.addtl_inf),
     )
