@@ -6,8 +6,6 @@ Pactus is an MCP server for parsing and validating ISO 20022 payment messages di
 
 ## Status
 
-Stable. Version 1.0.0 is on PyPI.
-
 ```bash
 pip install pactus-mcp
 # or
